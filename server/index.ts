@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createServer as createViteServer } from 'vite';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,27 +18,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// In development, serve a simple HTML page
+// Development mode: integrate with Vite
 if (process.env.NODE_ENV === 'development') {
-  app.get('*', (req, res) => {
-    res.send(`
-      <!DOCTYPE html>
-      <html lang="pl">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>CRM Development</title>
-      </head>
-      <body>
-        <div id="root">
-          <h1>CRM Development Server</h1>
-          <p>Serwer działa poprawnie na porcie ${PORT}</p>
-          <p>API Health Check: <a href="/api/health">/api/health</a></p>
-        </div>
-      </body>
-      </html>
-    `);
+  const vite = await createViteServer({
+    server: { middlewareMode: true },
+    appType: 'spa'
   });
+  
+  app.use(vite.ssrFixStacktrace);
+  app.use(vite.middlewares);
 } else {
   // Production mode: serve static files
   app.use(express.static(path.join(__dirname, '../dist/public')));
