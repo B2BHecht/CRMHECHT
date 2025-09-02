@@ -13,17 +13,13 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Basic health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
 // Development mode: integrate Vite dev server
 if (process.env.NODE_ENV === 'development') {
   const vite = await createViteServer({
     server: { middlewareMode: true },
     appType: 'spa',
   });
+  app.use(vite.ssrFixStacktrace);
   app.use(vite.middlewares);
 } else {
   // Production mode: serve static files
@@ -34,6 +30,12 @@ if (process.env.NODE_ENV === 'development') {
     res.sendFile(path.join(__dirname, '../dist/public/index.html'));
   });
 }
+
+// Basic health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
