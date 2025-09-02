@@ -1,7 +1,6 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { createServer as createViteServer } from 'vite';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,15 +17,27 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Development mode: integrate with Vite
+// In development, proxy to Vite dev server
 if (process.env.NODE_ENV === 'development') {
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: 'spa'
+  // Serve the main HTML file for all non-API routes
+  app.get('*', (req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="pl">
+        <head>
+          <meta charset="UTF-8" />
+          <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>CRM System</title>
+          <script type="module" src="/@vite/client"></script>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script type="module" src="/src/main.tsx"></script>
+        </body>
+      </html>
+    `);
   });
-  
-  app.use(vite.ssrFixStacktrace);
-  app.use(vite.middlewares);
 } else {
   // Production mode: serve static files
   app.use(express.static(path.join(__dirname, '../dist/public')));
